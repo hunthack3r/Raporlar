@@ -151,4 +151,57 @@ Sonuç olarak, bu zafiyetin ciddi bir güvenlik açığı olduğunu doğrulayan 
 Bu raporun geçerli olduğunu düşündüğüm için raporun açıklanmasını istedim ve kütüphane yöneticisi de bu raporu açıkladı. Rapor, uzaktan kod yürütme (RCE) zafiyeti nedeniyle önemlidir.
 
 __________________________________________________________
-# SSTI 4
+# XXE 
+
+Raporun Özeti:
+@johnstone olarak, Starbucks'ın Çin'deki iş ilanları sayfasını (https://ecjobs.starbucks.com.cn) ziyaret ettiğimde, 
+bir XML External Entities (XXE) zafiyeti tespit ettim. Bu zafiyet, 
+bir saldırganın sunucuda zararlı dosyalar yüklemesine ve çeşitli saldırılar gerçekleştirmesine olanak tanıyordu.
+
+Zafiyeti Bulma Süreci:
+Adım 1: Öncelikle, kullanıcı fotoğrafı yükleme özelliğini incelemeye başladım. Burada, 
+güvenlik kısıtlamalarını aşarak HTML, XHTML, XML, config gibi dosyaları yükleyebileceğimi fark ettim.
+
+Adım 2: Burp Suite kullanarak, yükleme isteğini yakaladım ve allow_file_type_list parametresine html; 
+gibi bir değer ekledim. Ayrıca, dosya adının sonunu .jpg yerine .html olarak değiştirdim. Bu şekilde, 
+sunucunun yüklediğim dosyayı kabul etmesini sağladım. Yüklediğim dosyaya şu URL'den erişebildim:
+
+```
+https://ecjobs.starbucks.com.cn/retail/tempfiles/temp_uploaded_641dee35-5a62-478e-90d7-f5558a78c60e.html
+```
+Adım 3: Ardından, zararlı bir XML dosyası oluşturdum ve _hxpage parametresi ile bu dosyayı sunucuya yükledim. Örneğin:
+
+```
+POST /retail/hxpublic_v6/hxdynamicpage6.aspx?_hxpage=tempfiles/temp_uploaded_d4e4c8c5-c4ab-4743-a6fd-c2d779a29734.xml&max_file_size_kb=1024&allow_file_type_list=xml;jpg;jpeg;png;bmp;
+```
+Ya da HX_PAGE_NAME parametresini değiştirdim:
+
+```
+POST /retail/hxpublic_v6/hxxmlservice6.aspx HTTP/1.1
+HX_PAGE_NAME="tempfiles/temp_uploaded_71cc275c-64fc-40fc-a9cc-52cce5a02858.xml"
+```
+Bu istekler sonucunda, Starbucks'ın sunucusunun saldırganın sunucusundan DTD dosyasını çektiğini doğruladım.
+
+
+Bu zafiyet, saldırganın sunucuda zararlı dosyalar yüklemesine ve kullanıcıların bilgilerini çalmasına olanak tanıyordu. 
+Ayrıca, XXE zafiyeti, sunucunun bazı bilgilerini açığa çıkartabilir, hizmet reddi saldırılarına yol açabilir ve hatta NTLMv2 hash saldırılarına neden olabilir. 
+Starbucks'ın sunucu ortamı IIS 7.5 + ASP.NET + Windows olduğundan, bu zafiyet sunucunun tamamen ele geçirilmesine yol açabilir.
+
+Eğer bu rapor geçerli sayılmayacaksa, lütfen raporu kendim kapatabilmem için izin verin. Teşekkür ederim.
+
+
+24 Şubat 2019: Raporum Starbucks'a sundum.
+26 Şubat 2019: Zafiyetin ciddiyeti "orta" seviyeden "yüksek" seviyeye çıkarıldı, ardından "kritik" olarak güncellendi.
+27 Şubat 2019: Starbucks ekibi raporumu inceledi ve doğruladı. Rapor "Triaged" (işlemde) durumuna alındı.
+3 Mart 2019: Starbucks ekibine zafiyetin hala var olup olmadığını sordum ve raporun ödüle uygun olup olmadığını öğrenmek istedim.
+7 Mart 2019: Yeni bir zafiyet keşfettim ve ekibe bildirdim. Bu sefer, dosya türü kısıtlamalarını atlayarak sunucuya ASPX dosyaları yükleyebiliyordum. 
+Bu, önceki XXE zafiyetinden bile daha ciddi bir sorundu, çünkü saldırgan sunucuda zararlı komutlar çalıştırabilirdi.
+20 Mart 2019: Starbucks ekibi, raporumun başarıyla çözüldüğünü onayladı ve ödül verileceğini bildirdi.
+
+
+Bu raporun sonunda Starbucks, raporumu doğruladı ve gerekli düzeltmeleri yaptı. Bu süreç boyunca ekiple iyi bir iletişim kurdum ve sonunda ödüllendirildim. 
+Ayrıca, bu raporun açıklanmasını talep ettim ve bu talebim kabul edildi. Bu benim için şanslı bir gün oldu!
+
+
+__________________________________________________________
+
