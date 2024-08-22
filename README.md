@@ -1,4 +1,7 @@
 # Raporlar 
+```
+https://github.com/reddelexc/hackerone-reports
+```
 
 ### SSTI Notlarim
 
